@@ -126984,7 +126984,7 @@ const SAMPLE_VERSES = {
 };
 
 // Generate mock verse data for a given book and chapter
-function generateMockVerses(book, chapter, numVerses = 30) {
+function generateMockVerses(book: string, chapter: string | number, numVerses = 30) {
   const verses = [];
   for (let i = 1; i <= numVerses; i++) {
     verses.push({
@@ -127001,10 +127001,11 @@ export function getBibleData() {
 }
 
 // Get verses for a specific chapter
-export function getChapterVerses(book, chapter) {
+export function getChapterVerses(book: string, chapter: string | number) {
   // Check if we have sample verses for this book and chapter
-  if (SAMPLE_VERSES[book] && SAMPLE_VERSES[book][chapter]) {
-    return SAMPLE_VERSES[book][chapter];
+  const chapterKey = String(chapter);
+  if ((SAMPLE_VERSES as any)[book] && (SAMPLE_VERSES as any)[book][chapterKey]) {
+    return (SAMPLE_VERSES as any)[book][chapterKey];
   }
 
   // If not in our sample data, generate placeholder verses
@@ -127013,7 +127014,8 @@ export function getChapterVerses(book, chapter) {
   if (!bookData) return [];
 
   // Use a consistent number of verses based on chapter number
-  const versesCount = 20 + (chapter % 10); // Between 20-29 verses
+  const chapterNum = typeof chapter === 'string' ? parseInt(chapter, 10) : chapter;
+  const versesCount = 20 + (chapterNum % 10); // Between 20-29 verses
   
   return generateMockVerses(book, chapter, versesCount);
 }
