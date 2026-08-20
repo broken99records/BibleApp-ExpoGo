@@ -1,52 +1,48 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  Animated,
-  Dimensions,
-  SafeAreaView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Gesture, GestureDetector, Directions } from 'react-native-gesture-handler';
 import { useBibleData } from '@/hooks/useBibleData';
-import { useTheme } from '@/context/ThemeContext';
-import { useLastPosition } from '@/hooks/useLastPosition';
-import BookDrawer from '@/components/BookDrawer';
-import ChapterSelector from '@/components/ChapterSelector';
-import SummaryModal from '@/components/SummaryModal';
-import { Book as BookIcon, Menu, BookOpen, ArrowLeft, ArrowRight, Info } from 'lucide-react-native';
+import { tokens, useTheme } from '@/context/ThemeContext';
+import { useLastPosition } from '@/context/LastPositionContext';
+import { BIBLE_BOOKS } from '@/utils/bibleData';
+import { useReadingPreferences } from '@/hooks/useReadingPreferences';
+import { useReaderIntent } from '@/context/ReaderIntentContext';
+import SummarySheet from '@/components/SummarySheet';
+import { router } from 'expo-router';
+import { Sparkles, BookOpen } from 'lucide-react-native';
+import { Position } from '@/types/bible';
 
-const { width } = Dimensions.get('window');
-
-interface InitialPosition {
-  book?: string;
-  chapter?: number;
-}
+/** Clears the floating native tab bar, which exposes no height to measure. */
+const FAB_CLEARANCE = 84;
 
 interface BibleReaderProps {
-  initialPosition?: InitialPosition;
+  initialPosition: Position;
 }
 
 export default function BibleReader({ initialPosition }: BibleReaderProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { 
     currentBook, 
     currentChapter, 
-    bibleData, 
     verseData, 
     totalChapters,
     setCurrentBook, 
     setCurrentChapter 
   } = useBibleData(initialPosition);
   const { saveLastPosition } = useLastPosition();
+  const { fontSize, lineHeight } = useReadingPreferences();
   
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isChapterSelectorOpen, setIsChapterSelectorOpen] = useState(false);
-  const [summaryModalVisible, setSummaryModalVisible] = useState(false);
+  const { pendingReference, clearReference } = useReaderIntent();
+  const [summarySheetVisible, setSummarySheetVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-  
-  const drawerAnimation = useRef(new Animated.Value(0)).current;
   
   useEffect(() => {
     if (verseData.length > 0) {
@@ -54,34 +50,9 @@ export default function BibleReader({ initialPosition }: BibleReaderProps) {
     }
   }, [currentBook, currentChapter, verseData]);
 
-  const toggleDrawer = () => {
-    setIsDrawerOpen(!isDrawerOpen);
-    Animated.timing(drawerAnimation, {
-      toValue: isDrawerOpen ? 0 : 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const drawerTranslateX = drawerAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-width * 0.7, 0],
-  });
-
-  const handleBookSelect = (bookName: string) => {
+  const handleSelectReference = (bookName: string, chapter: number) => {
     setCurrentBook(bookName);
-    setCurrentChapter(1);
-    setIsDrawerOpen(false);
-    Animated.timing(drawerAnimation, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handleChapterSelect = (chapter: number) => {
     setCurrentChapter(chapter);
-    setIsChapterSelectorOpen(false);
     scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
   };
 
@@ -99,120 +70,107 @@ export default function BibleReader({ initialPosition }: BibleReaderProps) {
     }
   };
 
+  // A reference picked on the books pages lands here, since the reader's tab
+  // is already mounted and would not receive it as a route param.
+  useEffect(() => {
+    if (!pendingReference) return;
+    handleSelectReference(pendingReference.book, pendingReference.chapter);
+    clearReference();
+  }, [pendingReference]);
+
+  const openBooks = () => router.push('/(tabs)/bible/books');
+
+  // Memoised, or every render rebinds the recognisers and can drop a swipe
+  // mid-gesture. runOnJS, because a gesture callback is a worklet on the UI
+  // thread by default and these handlers set React state.
+  const gesture = useMemo(() => {
+    const flingLeft = Gesture.Fling()
+      .direction(Directions.LEFT)
+      .runOnJS(true)
+      .onStart(navigateToNextChapter);
+
+    const flingRight = Gesture.Fling()
+      .direction(Directions.RIGHT)
+      .runOnJS(true)
+      .onStart(navigateToPreviousChapter);
+
+    return Gesture.Race(flingLeft, flingRight);
+  }, [currentChapter, totalChapters]);
+  const headerText = `${currentBook} ${currentChapter}`;
+  const testament =
+    BIBLE_BOOKS.find(entry => entry.name === currentBook)?.testament === 'new'
+      ? 'New Testament'
+      : 'Old Testament';
+  const chapterCaption = `${testament} · Chapter ${currentChapter} of ${totalChapters}`;
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <TouchableOpacity onPress={toggleDrawer} style={styles.headerButton}>
-          <Menu size={24} color={colors.text} />
-        </TouchableOpacity>
-        
-        <View style={styles.titleContainer}>
-          <TouchableOpacity 
-            onPress={() => setIsChapterSelectorOpen(true)}
-            style={styles.chapterSelector}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+
+      <GestureDetector gesture={gesture}>
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scrollViewContent,
+            {
+              paddingTop: insets.top + tokens.spacing[6],
+              paddingBottom: insets.bottom + FAB_CLEARANCE,
+            },
+          ]}
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+        >
+          <TouchableOpacity
+            onPress={openBooks}
+            style={styles.reference}
+            accessibilityRole="button"
+            accessibilityLabel={`${headerText}, ${chapterCaption}. Tap to change book or chapter.`}
           >
-            <BookOpen size={20} color={colors.primary} style={styles.chapterIcon} />
-            <Text style={[styles.headerTitle, { color: colors.text }]}>
-              {currentBook} {currentChapter}
+            <BookOpen size={32} color={colors.primary} />
+            <Text style={[styles.referenceText, { color: colors.text }]}>{headerText}</Text>
+            <Text style={[styles.referenceCaption, { color: colors.textSecondary }]}>
+              {chapterCaption}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.summaryButton}
-            onPress={() => setSummaryModalVisible(true)}
-          >
-            <Info size={20} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Bible Content */}
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollViewContent}
-      >
-        {verseData.map((verse) => (
-          <View key={verse.verse} style={styles.verseContainer}>
-            <Text style={[styles.verseNumber, { color: colors.primary }]}>
-              {verse.verse + 1}
+          {/* One paragraph per verse: numbers stay inline, but a chapter does
+              not collapse into an unbroken wall of text. A long-press handler
+              attaches to the verse Text below. */}
+          {verseData.map((verse) => (
+            <Text
+              key={verse.verse}
+              style={[styles.verseParagraph, { fontSize, lineHeight, color: colors.text }]}
+            >
+              <Text style={[styles.verseNumberInline, { color: colors.primary }]}>
+                {verse.verse}
+              </Text>
+              {'  '}
+              {verse.text}
             </Text>
-            <Text style={[styles.verseText, { color: colors.text }]}>{verse.text}</Text>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      </GestureDetector>
 
-      {/* Navigation Bar */}
-      <View style={[styles.navigationBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
-        <TouchableOpacity 
-          onPress={navigateToPreviousChapter}
-          style={[
-            styles.navButton,
-            currentChapter === 1 && styles.navButtonDisabled
-          ]}
-          disabled={currentChapter === 1}
-        >
-          <ArrowLeft size={24} color={currentChapter === 1 ? colors.textSecondary : colors.primary} />
-        </TouchableOpacity>
-
-        <View style={styles.chapterIndicator}>
-          <Text style={[styles.chapterText, { color: colors.text }]}>
-            Chapter {currentChapter} of {totalChapters}
-          </Text>
-        </View>
-
-        <TouchableOpacity 
-          onPress={navigateToNextChapter}
-          style={[
-            styles.navButton,
-            currentChapter === totalChapters && styles.navButtonDisabled
-          ]}
-          disabled={currentChapter === totalChapters}
-        >
-          <ArrowRight size={24} color={currentChapter === totalChapters ? colors.textSecondary : colors.primary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Book Drawer */}
-      <Animated.View
+      {/* Summary Modal */}
+      <TouchableOpacity
+        onPress={() => setSummarySheetVisible(true)}
         style={[
-          styles.drawer,
-          { transform: [{ translateX: drawerTranslateX }], backgroundColor: colors.backgroundSecondary }
+          styles.fab,
+          { backgroundColor: colors.primary, bottom: insets.bottom + FAB_CLEARANCE },
         ]}
+        accessibilityRole="button"
+        accessibilityLabel={`Summary of ${headerText}`}
       >
-        <BookDrawer 
-          onBookSelect={handleBookSelect} 
-          currentBook={currentBook}
-          onClose={toggleDrawer}
-        />
-      </Animated.View>
+        <Sparkles size={22} color={colors.onPrimary} />
+      </TouchableOpacity>
 
-      {/* Backdrop */}
-      {isDrawerOpen && (
-        <TouchableOpacity
-          style={styles.backdrop}
-          onPress={toggleDrawer}
-          activeOpacity={1}
-        />
-      )}
-
-      {/* Modals */}
-      <ChapterSelector
-        isVisible={isChapterSelectorOpen}
-        onClose={() => setIsChapterSelectorOpen(false)}
-        totalChapters={totalChapters}
-        currentChapter={currentChapter}
-        onSelectChapter={handleChapterSelect}
-      />
-
-      <SummaryModal
-        isVisible={summaryModalVisible}
-        onClose={() => setSummaryModalVisible(false)}
+      <SummarySheet
+        isVisible={summarySheetVisible}
+        onClose={() => setSummarySheetVisible(false)}
         book={currentBook}
         chapter={currentChapter}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -220,93 +178,40 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
+  reference: {
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingTop: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E1E1E8',
+    gap: tokens.spacing[2],
+    marginBottom: tokens.spacing[7],
   },
-  headerButton: {
-    padding: 8,
+  referenceText: {
+    fontSize: tokens.fontSize['2xl'],
+    fontFamily: 'Sans-Bold',
   },
-  titleContainer: {
-    flex: 1,
-    flexDirection: 'row',
+  referenceCaption: {
+    fontSize: tokens.fontSize.md,
+    fontFamily: 'Sans-Regular',
+  },
+  fab: {
+    position: 'absolute',
+    right: tokens.spacing[5],
+    width: 56,
+    height: 56,
+    borderRadius: tokens.radius.full,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginLeft: 8,
-  },
-  chapterSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-Medium',
-  },
-  chapterIcon: {
-    marginRight: 8,
-  },
-  summaryButton: {
-    padding: 8,
+    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,
   },
   scrollViewContent: {
-    padding: 16,
+    paddingHorizontal: tokens.spacing[6],
+    paddingTop: tokens.spacing[5],
   },
-  verseContainer: {
-    flexDirection: 'row',
-    marginBottom: 12,
+  verseParagraph: {
+    fontFamily: 'Serif-Regular',
+    marginBottom: tokens.spacing[3],
   },
-  verseNumber: {
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
-    marginRight: 8,
-    minWidth: 24,
-  },
-  verseText: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    lineHeight: 24,
-  },
-  navigationBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-  },
-  navButton: {
-    padding: 8,
-  },
-  navButtonDisabled: {
-    opacity: 0.5,
-  },
-  chapterIndicator: {
-    alignItems: 'center',
-  },
-  chapterText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-  },
-  drawer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    width: '70%',
-    zIndex: 1000,
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 999,
+  verseNumberInline: {
+    fontFamily: 'Serif-SemiBold',
   },
 });

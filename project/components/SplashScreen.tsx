@@ -2,8 +2,12 @@ import { useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, Animated, Easing } from 'react-native';
 import { Book } from 'lucide-react-native';
 import { Image } from 'react-native';
+import { useTheme } from '@react-navigation/native';
 
-export default function SplashScreen({ onFinish }) {
+
+
+export default function SplashScreen({ onFinish }: SplashScreenProps) {
+  const { colors } = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
@@ -20,7 +24,7 @@ export default function SplashScreen({ onFinish }) {
         toValue: 1,
         duration: 800,
         useNativeDriver: true,
-        easing: Easing.out(Easing.back()),
+        easing: Easing.out(Easing.back(1.70158)),
       }),
     ]).start();
 
@@ -40,7 +44,7 @@ export default function SplashScreen({ onFinish }) {
   }, [fadeAnim, scaleAnim, onFinish]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Animated.View
         style={[
           styles.content,
@@ -64,21 +68,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
   },
   content: {
     alignItems: 'center',
   },
   title: {
     fontSize: 32,
-    fontFamily: 'Inter-Bold',
-    color: '#1A1A2E',
+    fontFamily: 'Sans-Bold',
     marginTop: 24,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: '#4A4A68',
+    fontFamily: 'Sans-Regular',
   },
 });
