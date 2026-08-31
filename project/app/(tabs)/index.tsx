@@ -42,6 +42,10 @@ export default function HomeScreen() {
 
   const browseOldTestament = () => browseTestament('old');
   const browseNewTestament = () => browseTestament('new');
+  
+  const browseChurchCreed = () => {
+  router.push('/creed');
+};
 
   return (
     <PageLayout>
@@ -78,6 +82,14 @@ export default function HomeScreen() {
             subtitle="27 books"
             icon={<Library size={24} color={colors.primary} />}
             onPress={browseNewTestament}
+          />
+        </View>
+        <View style={styles.testamentCard}>
+          <Card
+            title="Church Creed"
+            subtitle=""
+            icon={<Library size={24} color={colors.primary} />}
+            onPress={browseChurchCreed}
           />
         </View>
       </View>
