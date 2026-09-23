@@ -17,6 +17,11 @@ import { ReaderIntentProvider } from '@/context/ReaderIntentContext';
 import { LastPositionProvider } from '@/context/LastPositionContext';
 
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import {
+  Lora_400Regular,
+  Lora_700Bold,
+} from '@expo-google-fonts/lora';
+
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -30,6 +35,8 @@ export default function Layout() {
     'Sans-Bold': PlusJakartaSans_700Bold,
     'Serif-Regular': Literata_400Regular,
     'Serif-SemiBold': Literata_600SemiBold,
+    'Serif-Bold': Lora_700Bold,
+    'Serif-Regular-Lora': Lora_400Regular,
   });
 
   return (
