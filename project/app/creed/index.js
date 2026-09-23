@@ -2,7 +2,7 @@ import { StyleSheet, Text } from 'react-native';
 import { tokens, useTheme } from '@/context/ThemeContext';
 import PageLayout from '@/components/PageLayout';
 
-export default function creed() {
+export default function creedScreen() {
     const { colors } = useTheme();
 
     return (

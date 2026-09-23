@@ -8,6 +8,7 @@ import { useReaderIntent } from '@/context/ReaderIntentContext';
 import { getVerseOfTheDay } from '@/utils/verseOfTheDay';
 import PageLayout from '@/components/PageLayout';
 import Card from '@/components/Card';
+import { Link } from 'expo-router';
 
 export default function HomeScreen() {
   const { colors } = useTheme();
@@ -42,10 +43,11 @@ export default function HomeScreen() {
 
   const browseOldTestament = () => browseTestament('old');
   const browseNewTestament = () => browseTestament('new');
-  
+
   const browseChurchCreed = () => {
-  router.push('/creed');
-};
+    console.log("Card was tapped!");
+    router.push('/creed');
+  };
 
   return (
     <PageLayout>
@@ -84,14 +86,18 @@ export default function HomeScreen() {
             onPress={browseNewTestament}
           />
         </View>
+       
+
         <View style={styles.testamentCard}>
-          <Card
-            title="Church Creed"
-            subtitle=""
-            icon={<Library size={24} color={colors.primary} />}
-            onPress={browseChurchCreed}
-          />
+          <Link href="/creed" asChild>
+            <Card
+              title="Church Creed"
+              subtitle=""
+              icon={<Library size={24} color={colors.primary} />}
+            />
+          </Link>
         </View>
+
       </View>
     </PageLayout>
   );
