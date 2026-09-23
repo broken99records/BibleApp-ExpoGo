@@ -86,12 +86,15 @@ export default function HomeScreen() {
             onPress={browseNewTestament}
           />
         </View>
-        
-       
+
+
 
       </View>
 
-      <View style={styles.testamentCard}>
+      <View style={styles.testaments}>
+
+
+        <View style={styles.testamentCard}>
           <Link href="/creed" asChild>
             <Card
               title="Church Creed"
@@ -101,7 +104,7 @@ export default function HomeScreen() {
           </Link>
         </View>
 
-      
+
         <View style={styles.testamentCard}>
           <Link href="/anthem" asChild>
             <Card
@@ -111,6 +114,7 @@ export default function HomeScreen() {
             />
           </Link>
         </View>
+      </View>
 
     </PageLayout>
   );

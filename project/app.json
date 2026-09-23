@@ -42,6 +42,13 @@
     },
     "android": {
       "package": "com.broken99records.holybible"
-    }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d4cedd65-b388-427f-acbf-815fb2ca2056"
+    },
+    "ios": {}
   }
 }
