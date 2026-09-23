@@ -1,28 +1,13 @@
 import { useState, useEffect } from 'react';
 import { getBibleData, getChapterVerses } from '@/utils/bibleData';
+import { Book, Verse, Position } from '@/types/bible';
 
-interface BibleBook {
-  name: string;
-  chapters: number;
-  testament: 'old' | 'new';
-}
-
-interface Verse {
-  verse: number;
-  text: string;
-}
-
-interface InitialPosition {
-  book?: string;
-  chapter?: number;
-}
-
-export function useBibleData(initialPosition: InitialPosition = { book: 'Genesis', chapter: 1 }) {
-  const [currentBook, setCurrentBook] = useState<string>(initialPosition.book || 'Genesis');
-  const [currentChapter, setCurrentChapter] = useState<number>(initialPosition.chapter || 1);
-  const [bibleData, setBibleData] = useState<BibleBook[]>([]);
+export function useBibleData(initialPosition: Position = { book: 'Genesis', chapter: 1 }) {
+  const [currentBook, setCurrentBook] = useState(initialPosition.book || 'Genesis');
+  const [currentChapter, setCurrentChapter] = useState(initialPosition.chapter || 1);
+  const [bibleData, setBibleData] = useState<Book[]>([]);
   const [verseData, setVerseData] = useState<Verse[]>([]);
-  const [totalChapters, setTotalChapters] = useState<number>(0);
+  const [totalChapters, setTotalChapters] = useState(0);
 
   // Load Bible data on component mount
   useEffect(() => {

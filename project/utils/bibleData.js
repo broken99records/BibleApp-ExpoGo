@@ -1,33 +1,7 @@
-// This is a simplified version of Bible data for demonstration purposes
-// In a real app, this would be a comprehensive dataset or connect to a Bible API
 
-import bibleData from '@/assets/Bible-Database/English/bible.json';
-
-interface BibleBook {
-  name: string;
-  chapters: number;
-  testament: 'old' | 'new';
-}
-
-interface BibleVerse {
-  Verseid: string;
-  Verse: string;
-}
-
-interface BibleChapter {
-  Verse: BibleVerse[];
-}
-
-interface BibleBookData {
-  Chapter: BibleChapter[];
-}
-
-interface BibleData {
-  Book: BibleBookData[];
-}
-
+//testing
 // List of books with chapter counts
-export const BIBLE_BOOKS: BibleBook[] = [
+export const BIBLE_BOOKS = [
   // Old Testament
   { name: 'Genesis', chapters: 50, testament: 'old' },
   { name: 'Exodus', chapters: 40, testament: 'old' },
@@ -101,7 +75,6 @@ export const BIBLE_BOOKS: BibleBook[] = [
 
 // Sample verse content for Genesis 1 (simplified)
 const SAMPLE_VERSES = {
- 
   "Genesis": {
     "1": [
       {
@@ -53920,7 +53893,7 @@ const SAMPLE_VERSES = {
       },
       {
         "verse": 17,
-        "text": "“I will show you, listen to me; that which I have seen I will declare:"
+        "text": "I will show you, listen to me; that which I have seen I will declare:"
       },
       {
         "verse": 18,
@@ -56854,6 +56827,7 @@ const SAMPLE_VERSES = {
       }
     ]
   },
+  
   "Psalms": {
     "1": [
       {
@@ -127006,38 +126980,20 @@ const SAMPLE_VERSES = {
   }
 
 
-};
+  };
 
-// Generate mock verse data for a given book and chapter
-function generateMockVerses(book, chapter, numVerses = 30) {
-  const verses = [];
-  for (let i = 1; i <= numVerses; i++) {
-    verses.push({
-      verse: i,
-      text: `This is verse ${i} of ${book} chapter ${chapter}. This is placeholder text to simulate Bible content. In a real app, this would contain the actual scripture text from a Bible database or API.`,
-    });
-  }
-  return verses;
-}
+
 
 // Get all Bible book data
-export function getBibleData(): BibleBook[] {
+export function getBibleData() {
   return BIBLE_BOOKS;
 }
 
 // Get verses for a specific chapter
-export function getChapterVerses(book: string, chapter: number): { verse: number; text: string }[] {
-  const bookIndex = BIBLE_BOOKS.findIndex(b => b.name === book);
-  if (bookIndex === -1) return [];
-
-  const bookData = (bibleData as BibleData).Book[bookIndex];
-  if (!bookData || !bookData.Chapter || !bookData.Chapter[chapter - 1]) return [];
-
-  const chapterData = bookData.Chapter[chapter - 1];
-  if (!chapterData.Verse) return [];
-
-  return chapterData.Verse.map(verse => ({
-    verse: parseInt(verse.Verseid.slice(-2)),
-    text: verse.Verse
-  }));
+export function getChapterVerses(book, chapter){
+  // Cast the massive, raw SAMPLE_VERSES data blob to index it dynamically by book and chapter.
+  // This is required because SAMPLE_VERSES is a 127k-line literal whose inferred shape cannot be indexed dynamically.
+   
+    return SAMPLE_VERSES[book][chapter];
+  
 }
