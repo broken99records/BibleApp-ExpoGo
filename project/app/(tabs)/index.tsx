@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { router } from 'expo-router';
-import { BookOpen, Sunrise, Library, Scroll } from 'lucide-react-native';
+import { BookOpen, Sunrise, Library, Scroll, Radio } from 'lucide-react-native';
 import { tokens, useTheme } from '@/context/ThemeContext';
 import { useLastPosition } from '@/context/LastPositionContext';
 import { useReaderIntent } from '@/context/ReaderIntentContext';
@@ -86,9 +86,12 @@ export default function HomeScreen() {
             onPress={browseNewTestament}
           />
         </View>
+        
        
 
-        <View style={styles.testamentCard}>
+      </View>
+
+      <View style={styles.testamentCard}>
           <Link href="/creed" asChild>
             <Card
               title="Church Creed"
@@ -98,7 +101,17 @@ export default function HomeScreen() {
           </Link>
         </View>
 
-      </View>
+      
+        <View style={styles.testamentCard}>
+          <Link href="/anthem" asChild>
+            <Card
+              title="Church Anthem"
+              subtitle=""
+              icon={<Radio size={24} color={colors.primary} />}
+            />
+          </Link>
+        </View>
+
     </PageLayout>
   );
 }
