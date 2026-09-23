@@ -50,7 +50,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <PageLayout>
+    <PageLayout scrollable>
       <Card
         title="Verse of the day"
         icon={<Sunrise size={24} color={colors.onPrimary} />}
